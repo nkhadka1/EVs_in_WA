@@ -1,0 +1,158 @@
+---
+title: "FinalProjectDemo"
+author: "Nabina Khadka"
+date: "2023-04-27"
+output: slidy_presentation
+---
+
+
+## INTRODUCTION
+
+Recently, people have started to go into Electric Vehicles(EVs). However, the old fashioned gas vehicles are still popular but since EVs are gaining more customers, hybrid cars are also being introduced. For my data analysis project, I am trying to gather information about the total EVs registered in Washington State Department of Licensing(DOL). The EVs are of two categories - Battery EVs and Plug-in Hybrid EVs.  
+
+
+## DATA SOURCE
+
+The publisher of the data is data.wa.gov.
+
+https://catalog.data.gov/dataset/electric-vehicle-population-data
+
+The data set has 124,716 entries under 17 total columns. There are few columns that are missing so the total accuracy of the data set cannot be determined. In order to get more precise analysis, the NA value columns needs to be removed.
+
+## Package and Data Loading
+
+Let's include the packages that we need
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(readr)
+```
+
+
+```{r}
+Sample_Data <- read_csv("Electric_Vehicle_Population_Data.csv")
+
+str(Sample_Data)
+
+summary(Sample_Data)
+```
+
+## CLEANING DATA
+
+```{r}
+data <- Sample_Data %>%
+  rename("Vehicle" ="Make",
+          "Year" ="Model Year"  ,
+          "VehicleType" = "Electric Vehicle Type"  ,
+          "Range"="Electric Range") %>%
+  select(County, City , State , Vehicle , Model , Year , VehicleType, Range)
+```
+
+
+```{r}
+data <- data %>%
+  drop_na()
+
+head(data)
+
+summary(data)
+```
+
+
+## GETTING TO LEARN ABOUT THE DATA
+
+1. Which brand has the most popularity gained over the year? 
+
+2. Estimate the electric range of the most popular vehicle brand.
+
+
+## Popularity gained over the year
+
+Let us find out the brands that we have and how their popularity has been growing over the years.
+
+```{r}
+ggplot(data , aes(x = Year , y = Vehicle  , color = VehicleType)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90) , legend.position="top") +
+  facet_grid(~VehicleType)
+```
+
+```{r}
+pop <- data %>%
+  filter(Vehicle %in% c('TESLA' ,'NISSAN' ,'KIA' ,'CHEVROLET','BMW','AUDI'))
+         
+head(pop)
+```
+
+
+```{r}
+ggplot(pop , aes(x = State , y = Year  , color = Vehicle)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90),legend.position="top") +
+  facet_grid(~VehicleType)
+```
+
+```{r}
+WA_data <- data %>%
+  filter(Vehicle %in% c('TESLA' ,'CHEVROLET'),
+         State %in% c('WA'))
+
+ggplot(WA_data , aes(x = Model , y = Year  , color = VehicleType)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90), legend.position="top") +
+  facet_grid(~Vehicle)
+```
+
+
+## Electric range of the most popular vehicle brand.
+
+```{r}
+ggplot(WA_data , aes(x = Range , y = Vehicle  , color = Model)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90) , legend.position="top") +
+  facet_grid(~VehicleType)
+```
+
+```{r}
+Tesla <- WA_data %>%
+  filter(Vehicle %in% c('TESLA'),
+         State %in% c('WA') ,
+         VehicleType %in% c('Battery Electric Vehicle (BEV)'))
+
+head(Tesla)
+
+ggplot(Tesla , aes(x = Vehicle , y = Range  , color = Model)) +
+  geom_point() +
+  facet_grid(~Model)+
+  labs(x = "Vehicle: Tesla", y = "Range") +
+  theme(axis.text.x=element_blank(),legend.position="top")
+
+```
+
+Let's animate it for fun.
+
+
+```{r}
+library(gganimate)
+```
+
+
+```{r}
+ggplot(Tesla , aes(x = Vehicle , y = Range  , color = Model)) +
+  geom_point() +
+  facet_grid(~Model)+
+  theme(axis.text.x=element_blank(),legend.position="top")+
+  transition_time(Year) +
+  labs(title = "Year: {as.integer(frame_time)}" , x = "Vehicle: Tesla", y = "Range")+
+  shadow_wake(wake_length = 0.1, alpha = FALSE) 
+  
+```
+
+
+## Conclusion
+
+Here, we can see that over the year, the electric range has reached above 300 by 2023 and TESLA MODEL S has gained the most popularity.

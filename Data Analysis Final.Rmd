@@ -1,0 +1,209 @@
+---
+title: "Data Analysis Final Paper"
+author: "NABINA KHADKA"
+date: "26 APRIL, 2023"
+output: word_document
+---
+
+## Issue Description
+Describe the general area or issue you want to investigate in your data analysis project.
+
+With the increase in the price of gas, people have started to opt for more efficient mode of transportation. As USA is designed in a sub-urban style of living, it is not feasible to have a daily commute in the public vehicle. Most people go for driving their private vehicle. 
+
+Recently, people have started to go into Electric Vehicles(EVs). However, the old fashioned gas vehicles are still popular but since EVs are gaining more customers, hybrid cars are also being introduced. For my data analysis project, I am trying to gather information about the total EVs registered in Washington State Department of Licensing(DOL). The EVs are of two categories - Battery EVs and Plug-in Hybrid EVs.  
+
+
+## Questions 
+Define at least two specific questions you would like to attempt to answer. 
+
+1. Which brand has the most popularity gained over the year? 
+
+2. Estimate the electric range of the most popular vehicle brand.
+
+
+## Data Source
+Identify the data source(s) you used for your analysis. Provide a URL if possible.
+
+The metadata for the data was created on November,2020. It was later updated on April, 2023. The metadata can be found here:
+
+	https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld
+	
+The publisher of the data is data.wa.gov. The data set was created for public use and its license can be found here.
+
+  	http://opendatacommons.org/licenses/odbl/1.0/
+  	
+
+## Documentation
+Provide a link to the documentation for the data or the documentation itself. Is there a data dictionary?
+
+https://catalog.data.gov/dataset/electric-vehicle-population-data
+
+This data set shows the Battery Electric Vehicles (BEVs) and Plug-in Hybrid Electric Vehicles (PHEVs) that are currently registered through Washington State Department of Licensing (DOL).
+
+The data set has 124,716 entries under 17 total columns. There are few columns that are missing so the total accuracy of the data set cannot be determined. In order to get more precise analysis, the NA value columns needs to be removed.
+
+
+## Description of the Data
+Use the tools in R such as str() and summary() to describe the original dataset you imported.
+
+Let's include the packages that we need
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+Sample_Data <- read_csv("Electric_Vehicle_Population_Data.csv")
+
+str(Sample_Data)
+
+summary(Sample_Data)
+```
+
+## Cleaning and Preparation
+Describe the steps you took to get from your original data set to the final data set you used for your analysis. Include the R code in chunks.
+
+The file has a lot of columns that we do not need. First step would be to remove those columns and then make a data frame with the lesser and useful columns. 
+
+```{r}
+data <- Sample_Data %>%
+  rename("Vehicle" ="Make",
+          "Year" ="Model Year"  ,
+          "VehicleType" = "Electric Vehicle Type"  ,
+          "Range"="Electric Range") %>%
+  select(County, City , State , Vehicle , Model , Year , VehicleType, Range)
+```
+
+Here, we created a new data set. The summary of new data set is given below.
+
+```{r}
+head(data)
+
+summary(data)
+```
+Next, we notice that there are missing columns in our data set. We need to remove those NA values in order to get more precise analysis.
+
+```{r}
+data <- data %>%
+  drop_na()
+
+summary(data)
+```
+
+## Final Results
+Show how you approached the questions you posed at the beginning. Describe how much you were able to accomplish. There should be both graphical and numerical results produced by R code included in chunks. Explain what you did and what it means.
+
+For the final parts, lets head into the two questions we wrote at the beginning. 
+
+## Popularity gained over the year
+
+Let us find out the brands that we have and how their popularity has been growing over the years.
+
+```{r}
+ggplot(data , aes(x = Year , y = Vehicle  , color = VehicleType)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90) , legend.position="top") +
+  facet_grid(~VehicleType)
+```
+Given the data, we can see that over the year, BEVs has gained more popularity. Among the BEVs, Tesla, Nissan, Kia, Chevrolet, BMW and Audi has been most popular among the customers. Next, let's focus on the state.
+
+```{r}
+pop <- data %>%
+  filter(Vehicle %in% c('TESLA' ,'NISSAN' ,'KIA' ,'CHEVROLET','BMW','AUDI'))
+         
+head(pop)
+```
+
+```{r}
+ggplot(pop , aes(x = State , y = Year  , color = Vehicle)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90),legend.position="top") +
+  facet_grid(~VehicleType)
+```
+Let us now see the data in WA State. We can see that BEVs are popular and the brand Tesla and Chevrolet are the most popular. So, let's make a data frame with that information.
+
+```{r}
+WA_data <- data %>%
+  filter(Vehicle %in% c('TESLA' ,'CHEVROLET'),
+         State %in% c('WA'))
+
+ggplot(WA_data , aes(x = Model , y = Year  , color = VehicleType)) +
+  geom_point() +
+  geom_line() +
+  theme(axis.text.x = element_text(angle = 90), legend.position="top") +
+  facet_grid(~Vehicle)
+```
+
+When the data are more analyzed, we can see different models of these brands and the most popular model of each brand.
+
+From the above data, we can see that "TESLA MODEL S" is the most popular EV vehicle in WA State.
+
+
+## Electric range of the most popular vehicle brand.
+
+Let us start with the WA state data that we already have.
+
+```{r}
+head(WA_data)
+```
+
+Let us create a grid with the most popular two vehicles- Tesla and Chevrolet and check out their electric range.
+    
+```{r}
+ggplot(WA_data , aes(x = Range , y = Vehicle  , color = Model)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90) , legend.position="top") +
+  facet_grid(~VehicleType)
+```
+Now, let's focus into BEVs and the brand Tesla as we can already see that TESLA EV is the most popular brand in WA State.
+
+```{r}
+Tesla <- WA_data %>%
+  filter(Vehicle %in% c('TESLA'),
+         State %in% c('WA') ,
+         VehicleType %in% c('Battery Electric Vehicle (BEV)'))
+
+head(Tesla)
+
+ggplot(Tesla , aes(x = Vehicle , y = Range  , color = Model)) +
+  geom_point() +
+  facet_grid(~Model)+
+  labs(x = "Vehicle: Tesla", y = "Range") +
+  theme(axis.text.x=element_blank(),legend.position="top")
+
+```
+
+Let's animate it for fun.
+
+
+```{r}
+library(gganimate)
+```
+
+
+```{r}
+ggplot(Tesla , aes(x = Vehicle , y = Range  , color = Model)) +
+  geom_point() +
+  facet_grid(~Model)+
+  theme(axis.text.x=element_blank(),legend.position="top")+
+  transition_time(Year) +
+  labs(title = "Year: {as.integer(frame_time)}" , x = "Vehicle: Tesla", y = "Range")+
+  shadow_wake(wake_length = 0.1, alpha = FALSE) 
+  
+```
+## Conclusion
+
+Here, we can see that over the year, the electric range has reached above 300 by 2023. We can see the growth over the year. Still, TESLA MODEL S has gained the most popularity.
+
+## Link to Rpubs
+
+https://rpubs.com/NabinaKhadka/1034893
+
+
+## Link to the video
+
+https://youtu.be/yLqNmy8Eebs
